@@ -18,6 +18,13 @@ public class HttpErrorInfo {
     @JsonProperty("message")
     private final String message;
 
+    public HttpErrorInfo() {
+        this.timestamp = null;
+        this.path = null;
+        this.httpStatus = null;
+        this.message = null;
+    }
+
     public HttpErrorInfo(HttpStatus httpStatus, String path, String message) {
         this.timestamp = ZonedDateTime.now();
         this.path = path;
