@@ -22,20 +22,50 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
     private final ProductCompositeIntegration productCompositeIntegration;
 
     @Override
-    public ProductAggregate getProduct(int productId) {
+    public ProductAggregate getCompositeProduct(int productId) {
+        log.debug("getCompositeProduct: lookup a product aggregate for productId: {}", productId);
+
         Product product = productCompositeIntegration.getProduct(productId);
         if(product == null) throw new NotFoundException("No product found for productId: " + productId);
 
         List<Recommendation> recommendations = productCompositeIntegration.getRecommendations(productId);
         List<Review> reviews = productCompositeIntegration.getReviews(productId);
 
+        log.debug("getCompositeProduct: aggregate entity found for productId: {}", productId);
         return createProductAggregation(product, recommendations, reviews, serviceUtil.getServiceAddress());
+    }
+
+    @Override
+    public void createCompositeProduct(ProductAggregate body) {
+        log.debug("createCompositeProduct: creates a new composite entity for productId: {}", body.getProductId());
+
+        Product product = new Product(body.getProductId(), body.getName(), body.getWeight(), null);
+        productCompositeIntegration.createProduct(product);
+
+        // Todo: 상품에 대한 추천 저장
+
+        // Todo: 상품에 대한 리뷰 저장
+
+        log.debug("createCompositeProduct: composite entities created for productId: {}", body.getProductId() );
+    }
+
+    @Override
+    public void deleteCompositeProduct(int productId) {
+        log.debug("deleteCompositeProduct: Deletes a product aggregate for productId: {}", productId);
+
+        productCompositeIntegration.deleteProduct(productId);
+
+        // Todo: 상품에 대한 추천 삭제
+
+        // Todo: 상품에 대한 리뷰 삭제
+
+        log.debug("deleteCompositeProduct: aggregate entities deleted for productId: {}", productId);
     }
 
     private ProductAggregate createProductAggregation(Product product, List<Recommendation> recommendations, List<Review> reviews, String compositeAddress) {
         List<RecommendationSummary> recommendationSummaries = (recommendations == null) ? null :
             recommendations.stream()
-                .map(r -> new RecommendationSummary(r.getRecommendationId(), r.getAuthor(), r.getRate()))
+                .map(r -> new RecommendationSummary(r.getRecommendationId(), r.getAuthor(), r.getRate(), r.getContent()))
                 .collect(Collectors.toList());
 
         List<ReviewSummary> reviewSummaries = (reviews == null) ? null :
@@ -62,8 +92,8 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
                 .productId(product.getProductId())
                 .name(product.getName())
                 .weight(product.getWeight())
-                .recommendationSummaries(recommendationSummaries)
-                .reviewSummaries(reviewSummaries)
+                .recommendations(recommendationSummaries)
+                .reviews(reviewSummaries)
                 .serviceAddresses(serviceAddresses)
                 .build();
     }

@@ -59,8 +59,8 @@ public class ProductCompositeServiceApplicationTests {
                 .expectHeader().contentType(MediaType.APPLICATION_JSON)
                 .expectBody()
                 .jsonPath("$.productId").isEqualTo(PRODUCT_ID_OK)
-                .jsonPath("$.recommendationSummaries.length()").isEqualTo(1)
-                .jsonPath("$.reviewSummaries.length()").isEqualTo(1);
+                .jsonPath("$.recommendations.length()").isEqualTo(1)
+                .jsonPath("$.reviews.length()").isEqualTo(1);
     }
 
     @Test

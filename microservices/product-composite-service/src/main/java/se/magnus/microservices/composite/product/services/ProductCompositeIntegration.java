@@ -4,10 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import reactor.netty.ChannelBindException;
 import se.magnus.api.core.product.Product;
 import se.magnus.api.core.product.ProductService;
 import se.magnus.api.core.recommendation.Recommendation;
@@ -65,16 +68,37 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
 
             return product;
         }catch (HttpClientErrorException e){
-            switch (e.getStatusCode()){
-                case NOT_FOUND:
-                    throw new NotFoundException(getErrorMessage(e));
-                case UNPROCESSABLE_ENTITY:
-                    throw new InvalidInputException(getErrorMessage(e));
-                default:
-                    log.warn("Got a unexpected HTTP error: {}, will rethrow it", e.getStatusCode());
-                    log.warn("Error body: {}", e.getResponseBodyAsString());
-                    throw e;
-            }
+            throw handleHttpClientException(e);
+        }
+    }
+
+    @Override
+    public Product createProduct(Product body) {
+        try {
+            String url = productServiceUrl;
+            log.debug("Will post a new product to URL: {}", url);
+
+            HttpEntity<Product> httpEntity = new HttpEntity<>(body, null);
+
+            Product product = restTemplate.exchange(url, HttpMethod.POST, httpEntity, new ParameterizedTypeReference<Product>() {}).getBody();
+            log.debug("Created a product with id: {}", product.getProductId());
+
+            return product;
+        }catch (HttpClientErrorException e){
+            throw handleHttpClientException(e);
+        }
+    }
+
+    @Override
+    public void deleteProduct(int productId) {
+        try {
+            String url = productServiceUrl + "/" + productId;
+
+            log.debug("Will call the deleteProduct API on URL: {}", url);
+
+            restTemplate.delete(url);
+        }catch (HttpClientErrorException e){
+            throw handleHttpClientException(e);
         }
     }
 
@@ -129,6 +153,19 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         }catch (Exception e){
             log.warn("Got an exception while requesting reviews, return zero reviews: {}", e.getMessage());
             return new ArrayList<>();
+        }
+    }
+
+    private RuntimeException handleHttpClientException(HttpClientErrorException e) {
+        switch (e.getStatusCode()){
+            case NOT_FOUND:
+                return new NotFoundException(getErrorMessage(e));
+            case UNPROCESSABLE_ENTITY:
+                return new InvalidInputException(getErrorMessage(e));
+            default:
+                log.warn("Got a unexpected HTTP error: {}, will rethrow it", e.getStatusCode());
+                log.warn("Error body: {}", e.getResponseBodyAsString());
+                return e;
         }
     }
 }
