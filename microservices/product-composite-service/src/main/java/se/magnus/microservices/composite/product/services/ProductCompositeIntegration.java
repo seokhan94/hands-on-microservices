@@ -45,7 +45,7 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
         this.productServiceUrl = "http://" + productServiceHost + ":" + productServicePort + "/product/";
-        this.recommendationServiceUrl = "http://" + recommendationServiceHost + ":" + recommendationServicePort + "/recommendation?productId=";
+        this.recommendationServiceUrl = "http://" + recommendationServiceHost + ":" + recommendationServicePort + "/recommendation";
         this.reviewServiceUrl = "http://" + reviewServiceHost+ ":" + reviewServicePort + "/review?productId=";
     }
 
@@ -111,7 +111,7 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
     @Override
     public List<Recommendation> getRecommendations(int productId) {
         try {
-            String url = recommendationServiceUrl + productId;
+            String url = recommendationServiceUrl + "?productId=" + productId;
 
             log.debug("Will call getRecommendations API on URL: {}", url);
 
@@ -150,7 +150,7 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
     @Override
     public void deleteRecommendations(int productId) {
         try {
-            String url = recommendationServiceUrl + productId;
+            String url = recommendationServiceUrl + "?productId=" + productId;
             log.debug("Will call the deleteRecommendations API on URL: {}", url);
 
             restTemplate.delete(url);
