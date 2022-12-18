@@ -46,7 +46,7 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         this.objectMapper = objectMapper;
         this.productServiceUrl = "http://" + productServiceHost + ":" + productServicePort + "/product/";
         this.recommendationServiceUrl = "http://" + recommendationServiceHost + ":" + recommendationServicePort + "/recommendation";
-        this.reviewServiceUrl = "http://" + reviewServiceHost+ ":" + reviewServicePort + "/review?productId=";
+        this.reviewServiceUrl = "http://" + reviewServiceHost+ ":" + reviewServicePort + "/review";
     }
 
     @Override
@@ -162,7 +162,7 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
     @Override
     public List<Review> getReviews(int productId) {
         try {
-            String url = reviewServiceUrl + productId;
+            String url = reviewServiceUrl + "?productId=" + productId;
 
             log.debug("Will call getReviews API on URL: {}", url);
 
@@ -179,6 +179,34 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         }catch (Exception e){
             log.warn("Got an exception while requesting reviews, return zero reviews: {}", e.getMessage());
             return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public Review createReview(Review body) {
+        try{
+            String url = reviewServiceUrl;
+            log.debug("Will post a new review to URL: {}", url);
+
+            HttpEntity<Review> httpEntity = new HttpEntity<>(body, null);
+            Review review = restTemplate.exchange(url, HttpMethod.POST, httpEntity, new ParameterizedTypeReference<Review>() {}).getBody();
+            log.debug("Created a review with id: {}", review.getProductId());
+
+            return review;
+        }catch (HttpClientErrorException e){
+            throw handleHttpClientException(e);
+        }
+    }
+
+    @Override
+    public void deleteReviews(int productId) {
+        try {
+            String url = reviewServiceUrl + "?productId=" + productId;
+            log.debug("Will call the deleteReviews API on URL: {}", url);
+
+            restTemplate.delete(url);
+        }catch (HttpClientErrorException e){
+            throw handleHttpClientException(e);
         }
     }
 

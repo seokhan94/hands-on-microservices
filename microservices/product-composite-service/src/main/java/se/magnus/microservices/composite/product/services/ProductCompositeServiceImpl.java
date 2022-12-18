@@ -42,14 +42,18 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
         Product product = new Product(body.getProductId(), body.getName(), body.getWeight(), null);
         productCompositeIntegration.createProduct(product);
 
-        // Todo: 상품에 대한 추천 저장
         if(body.getRecommendations() != null){
             body.getRecommendations().forEach(r -> {
                 Recommendation recommendation = new Recommendation(body.getProductId(), r.getRecommendationId(), r.getAuthor(), r.getRate(), r.getContent(), null);
                 productCompositeIntegration.createRecommendation(recommendation);
             });
         }
-        // Todo: 상품에 대한 리뷰 저장
+        if(body.getReviews() != null){
+            body.getReviews().forEach(r -> {
+                Review review = new Review(body.getProductId(), r.getReviewId(), r.getAuthor(), r.getSubject(), r.getContent(), null);
+                productCompositeIntegration.createReview(review);
+            });
+        }
 
         log.debug("createCompositeProduct: composite entities created for productId: {}", body.getProductId() );
     }
@@ -60,10 +64,9 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
 
         productCompositeIntegration.deleteProduct(productId);
 
-        // Todo: 상품에 대한 추천 삭제
         productCompositeIntegration.deleteRecommendations(productId);
 
-        // Todo: 상품에 대한 리뷰 삭제
+        productCompositeIntegration.deleteReviews(productId);
 
         log.debug("deleteCompositeProduct: aggregate entities deleted for productId: {}", productId);
     }
@@ -76,7 +79,7 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
 
         List<ReviewSummary> reviewSummaries = (reviews == null) ? null :
             reviews.stream()
-                .map(r -> new ReviewSummary(r.getReviewId(), r.getAuthor(), r.getSubject()))
+                .map(r -> new ReviewSummary(r.getReviewId(), r.getAuthor(), r.getSubject(), r.getContent()))
                 .collect(Collectors.toList());
 
         ServiceAddresses serviceAddresses = ServiceAddresses.builder()
