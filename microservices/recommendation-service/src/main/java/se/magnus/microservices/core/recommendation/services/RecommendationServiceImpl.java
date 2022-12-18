@@ -2,6 +2,7 @@ package se.magnus.microservices.core.recommendation.services;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.RestController;
 import se.magnus.api.core.recommendation.Recommendation;
 import se.magnus.api.core.recommendation.RecommendationService;
@@ -35,11 +36,16 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     @Override
     public Recommendation createRecommendation(Recommendation body) {
-        RecommendationEntity entity = recommendationMapper.apiToEntity(body);
-        RecommendationEntity savedEntity = recommendationRepository.save(entity);
+        try {
+            RecommendationEntity entity = recommendationMapper.apiToEntity(body);
+            RecommendationEntity savedEntity = recommendationRepository.save(entity);
 
-        log.debug("createRecommendation: created a recommendation entity: {}/{}", body.getProductId(), body.getRecommendationId());
-        return recommendationMapper.entityToApi(savedEntity);
+            log.debug("createRecommendation: created a recommendation entity: {}/{}", body.getProductId(), body.getRecommendationId());
+            return recommendationMapper.entityToApi(savedEntity);
+        }catch (DuplicateKeyException dke){
+            throw new InvalidInputException("Duplicate key, Product Id: " + body.getProductId() + ", Recommendation Id: " + body.getRecommendationId());
+        }
+
     }
 
     @Override
