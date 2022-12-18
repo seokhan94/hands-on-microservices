@@ -6,11 +6,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-import reactor.netty.ChannelBindException;
 import se.magnus.api.core.product.Product;
 import se.magnus.api.core.product.ProductService;
 import se.magnus.api.core.recommendation.Recommendation;
@@ -130,6 +128,34 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         }catch (Exception e){
             log.warn("Got an exception while requesting recommendations, return zero recommendations: {}", e.getMessage());
             return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public Recommendation createRecommendation(Recommendation body) {
+        try{
+            String url = recommendationServiceUrl;
+            log.debug("Will post a new recommendation to URL: {}", url);
+
+            HttpEntity<Recommendation> httpEntity = new HttpEntity<>(body, null);
+            Recommendation recommendation = restTemplate.exchange(url, HttpMethod.POST, httpEntity, new ParameterizedTypeReference<Recommendation>() {}).getBody();
+            log.debug("Created a recommendation with id: {}", recommendation.getProductId());
+
+            return recommendation;
+        }catch (HttpClientErrorException e){
+            throw handleHttpClientException(e);
+        }
+    }
+
+    @Override
+    public void deleteRecommendations(int productId) {
+        try {
+            String url = recommendationServiceUrl + productId;
+            log.debug("Will call the deleteRecommendations API on URL: {}", url);
+
+            restTemplate.delete(url);
+        }catch (HttpClientErrorException e){
+            throw handleHttpClientException(e);
         }
     }
 

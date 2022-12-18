@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RestController;
 import se.magnus.api.core.recommendation.Recommendation;
 import se.magnus.api.core.recommendation.RecommendationService;
+import se.magnus.microservices.core.recommendation.persistence.RecommendationEntity;
+import se.magnus.microservices.core.recommendation.persistence.RecommendationRepository;
 import se.magnus.util.exceptions.InvalidInputException;
 import se.magnus.util.http.ServiceUtil;
 
@@ -17,24 +19,33 @@ import java.util.List;
 public class RecommendationServiceImpl implements RecommendationService {
 
     private final ServiceUtil serviceUtil;
-
+    private final RecommendationRepository recommendationRepository;
+    private final RecommendationMapper recommendationMapper;
     @Override
     public List<Recommendation> getRecommendations(int productId) {
         if (productId < 1) throw new InvalidInputException("Invalid productId: " + productId);
 
-        if (productId == 113) {
-            log.debug("No recommendations found for productId: {}", productId);
-            return  new ArrayList<>();
-        }
+        List<RecommendationEntity> entityList = recommendationRepository.findByProductId(productId);
+        List<Recommendation> recommendationList = recommendationMapper.entityListToApiList(entityList);
+        recommendationList.forEach(e -> e.setServiceAddress(serviceUtil.getServiceAddress()));
 
-        List<Recommendation> recommendationList = List.of(
-                new Recommendation(productId, 1, "Author 1", 1, "Content 1", serviceUtil.getServiceAddress()),
-                new Recommendation(productId, 2, "Author 2", 2, "Content 2", serviceUtil.getServiceAddress()),
-                new Recommendation(productId, 3, "Author 3", 3, "Content 3", serviceUtil.getServiceAddress())
-
-        );
-
-        log.debug("/recommendation response size: {}", recommendationList.size());
+        log.debug("getRecommendations response size: {}", recommendationList.size());
         return recommendationList;
+    }
+
+    @Override
+    public Recommendation createRecommendation(Recommendation body) {
+        RecommendationEntity entity = recommendationMapper.apiToEntity(body);
+        RecommendationEntity savedEntity = recommendationRepository.save(entity);
+
+        log.debug("createRecommendation: created a recommendation entity: {}/{}", body.getProductId(), body.getRecommendationId());
+        return recommendationMapper.entityToApi(savedEntity);
+    }
+
+    @Override
+    public void deleteRecommendations(int productId) {
+        log.debug("deleteRecommendations: tries to delete recommendations for the product with productId: {}", productId);
+
+        recommendationRepository.deleteAll(recommendationRepository.findByProductId(productId));
     }
 }

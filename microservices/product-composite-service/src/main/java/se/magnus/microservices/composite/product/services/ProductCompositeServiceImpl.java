@@ -43,7 +43,12 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
         productCompositeIntegration.createProduct(product);
 
         // Todo: 상품에 대한 추천 저장
-
+        if(body.getRecommendations() != null){
+            body.getRecommendations().forEach(r -> {
+                Recommendation recommendation = new Recommendation(body.getProductId(), r.getRecommendationId(), r.getAuthor(), r.getRate(), r.getContent(), null);
+                productCompositeIntegration.createRecommendation(recommendation);
+            });
+        }
         // Todo: 상품에 대한 리뷰 저장
 
         log.debug("createCompositeProduct: composite entities created for productId: {}", body.getProductId() );
@@ -56,6 +61,7 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
         productCompositeIntegration.deleteProduct(productId);
 
         // Todo: 상품에 대한 추천 삭제
+        productCompositeIntegration.deleteRecommendations(productId);
 
         // Todo: 상품에 대한 리뷰 삭제
 
