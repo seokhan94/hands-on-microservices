@@ -1,13 +1,12 @@
 package se.magnus.api.core.review;
 
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import reactor.core.publisher.Flux;
 
 public interface ReviewService {
 
     @GetMapping(value = "/review", produces = "application/json")
-    List<Review> getReviews(@RequestParam int productId);
+    Flux<Review> getReviews(@RequestParam int productId);
 
     @PostMapping(
             value = "/review",

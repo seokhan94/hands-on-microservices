@@ -3,11 +3,11 @@ package se.magnus.microservices.composite.product.services;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 import se.magnus.api.composite.product.*;
 import se.magnus.api.core.product.Product;
 import se.magnus.api.core.recommendation.Recommendation;
 import se.magnus.api.core.review.Review;
-import se.magnus.util.exceptions.NotFoundException;
 import se.magnus.util.http.ServiceUtil;
 
 import java.util.List;
@@ -22,53 +22,64 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
     private final ProductCompositeIntegration productCompositeIntegration;
 
     @Override
-    public ProductAggregate getCompositeProduct(int productId) {
-        log.debug("getCompositeProduct: lookup a product aggregate for productId: {}", productId);
+    public Mono<ProductAggregate> getCompositeProduct(int productId) {
 
-        Product product = productCompositeIntegration.getProduct(productId);
-        if(product == null) throw new NotFoundException("No product found for productId: " + productId);
-
-        List<Recommendation> recommendations = productCompositeIntegration.getRecommendations(productId);
-        List<Review> reviews = productCompositeIntegration.getReviews(productId);
-
-        log.debug("getCompositeProduct: aggregate entity found for productId: {}", productId);
-        return createProductAggregation(product, recommendations, reviews, serviceUtil.getServiceAddress());
+        return Mono
+                .zip(
+                    values -> createProductAggregation((Product) values[0], (List<Recommendation>) values[1], (List<Review>) values[2], serviceUtil.getServiceAddress()),
+                    productCompositeIntegration.getProduct(productId),
+                    productCompositeIntegration.getRecommendations(productId).collectList(),
+                    productCompositeIntegration.getReviews(productId).collectList()
+                )
+                .doOnError(ex -> log.warn("getCompositeProduct failed: {}", ex.toString()))
+                .log();
     }
 
     @Override
     public void createCompositeProduct(ProductAggregate body) {
-        log.debug("createCompositeProduct: creates a new composite entity for productId: {}", body.getProductId());
+        try {
+            log.debug("createCompositeProduct: creates a new composite entity for productId: {}", body.getProductId());
 
-        Product product = new Product(body.getProductId(), body.getName(), body.getWeight(), null);
-        productCompositeIntegration.createProduct(product);
+            Product product = new Product(body.getProductId(), body.getName(), body.getWeight(), null);
+            productCompositeIntegration.createProduct(product);
 
-        if(body.getRecommendations() != null){
-            body.getRecommendations().forEach(r -> {
-                Recommendation recommendation = new Recommendation(body.getProductId(), r.getRecommendationId(), r.getAuthor(), r.getRate(), r.getContent(), null);
-                productCompositeIntegration.createRecommendation(recommendation);
-            });
+            if(body.getRecommendations() != null){
+                body.getRecommendations().forEach(r -> {
+                    Recommendation recommendation = new Recommendation(body.getProductId(), r.getRecommendationId(), r.getAuthor(), r.getRate(), r.getContent(), null);
+                    productCompositeIntegration.createRecommendation(recommendation);
+                });
+            }
+            if(body.getReviews() != null){
+                body.getReviews().forEach(r -> {
+                    Review review = new Review(body.getProductId(), r.getReviewId(), r.getAuthor(), r.getSubject(), r.getContent(), null);
+                    productCompositeIntegration.createReview(review);
+                });
+            }
+
+            log.debug("createCompositeProduct: composite entities created for productId: {}", body.getProductId() );
+        }catch (RuntimeException runtimeException){
+            log.warn("createCompositeProduct failed: {}", runtimeException.toString());
+            throw runtimeException;
         }
-        if(body.getReviews() != null){
-            body.getReviews().forEach(r -> {
-                Review review = new Review(body.getProductId(), r.getReviewId(), r.getAuthor(), r.getSubject(), r.getContent(), null);
-                productCompositeIntegration.createReview(review);
-            });
-        }
 
-        log.debug("createCompositeProduct: composite entities created for productId: {}", body.getProductId() );
     }
 
     @Override
     public void deleteCompositeProduct(int productId) {
-        log.debug("deleteCompositeProduct: Deletes a product aggregate for productId: {}", productId);
+        try {
+            log.debug("deleteCompositeProduct: Deletes a product aggregate for productId: {}", productId);
 
-        productCompositeIntegration.deleteProduct(productId);
+            productCompositeIntegration.deleteProduct(productId);
 
-        productCompositeIntegration.deleteRecommendations(productId);
+            productCompositeIntegration.deleteRecommendations(productId);
 
-        productCompositeIntegration.deleteReviews(productId);
+            productCompositeIntegration.deleteReviews(productId);
 
-        log.debug("deleteCompositeProduct: aggregate entities deleted for productId: {}", productId);
+            log.debug("deleteCompositeProduct: aggregate entities deleted for productId: {}", productId);
+        }catch (RuntimeException runtimeException){
+            log.warn("deleteCompositeProduct failed: {}", runtimeException.toString());
+            throw runtimeException;
+        }
     }
 
     private ProductAggregate createProductAggregation(Product product, List<Recommendation> recommendations, List<Review> reviews, String compositeAddress) {

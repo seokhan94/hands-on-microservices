@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 @Api(produces = "REST API for composite product information.")
 public interface ProductCompositeService {
@@ -21,7 +22,7 @@ public interface ProductCompositeService {
             }
     )
     @GetMapping(value = "/product-composite/{productId}", produces = "application/json")
-    ProductAggregate getCompositeProduct(@PathVariable int productId);
+    Mono<ProductAggregate> getCompositeProduct(@PathVariable int productId);
 
     @ApiOperation(
             value = "${api.product-composite.create-composite-product.description}",

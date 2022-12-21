@@ -9,6 +9,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import se.magnus.api.core.product.Product;
 import se.magnus.api.core.recommendation.Recommendation;
 import se.magnus.api.core.review.Review;
@@ -33,13 +35,13 @@ public class ProductCompositeServiceApplicationTests {
     @BeforeEach
     public void setUp(){
         Mockito.when(productCompositeIntegration.getProduct(PRODUCT_ID_OK))
-                .thenReturn(new Product(PRODUCT_ID_OK, "name", 1, "mock-address"));
+                .thenReturn(Mono.just(new Product(PRODUCT_ID_OK, "name", 1, "mock-address")));
 
         Mockito.when(productCompositeIntegration.getRecommendations(PRODUCT_ID_OK))
-                .thenReturn(Collections.singletonList(new Recommendation(PRODUCT_ID_OK, 1, "author", 1, "content", "mock address")));
+                .thenReturn(Flux.fromIterable(Collections.singletonList(new Recommendation(PRODUCT_ID_OK, 1, "author", 1, "content", "mock address"))));
 
         Mockito.when(productCompositeIntegration.getReviews(PRODUCT_ID_OK))
-                .thenReturn(Collections.singletonList(new Review(PRODUCT_ID_OK, 1, "author", "subject", "content", "mock address")));
+                .thenReturn(Flux.fromIterable(Collections.singletonList(new Review(PRODUCT_ID_OK, 1, "author", "subject", "content", "mock address"))));
 
         Mockito.when(productCompositeIntegration.getProduct(PRODUCT_ID_NOT_FOUND))
                 .thenThrow(new NotFoundException("NOT FOUND: " + PRODUCT_ID_NOT_FOUND));
@@ -51,41 +53,33 @@ public class ProductCompositeServiceApplicationTests {
 
     @Test
     public void getProductById(){
-        webTestClient.get()
-                .uri("/product-composite/" + PRODUCT_ID_OK)
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus().isOk()
-                .expectHeader().contentType(MediaType.APPLICATION_JSON)
-                .expectBody()
-                .jsonPath("$.productId").isEqualTo(PRODUCT_ID_OK)
-                .jsonPath("$.recommendations.length()").isEqualTo(1)
-                .jsonPath("$.reviews.length()").isEqualTo(1);
+        getAndVerifyProduct(PRODUCT_ID_OK, HttpStatus.OK)
+            .jsonPath("$.productId").isEqualTo(PRODUCT_ID_OK)
+            .jsonPath("$.recommendations.length()").isEqualTo(1)
+            .jsonPath("$.reviews.length()").isEqualTo(1);
     }
 
     @Test
     public void getProductNotFound(){
-        webTestClient.get()
-                .uri("/product-composite/" + PRODUCT_ID_NOT_FOUND)
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus().isNotFound()
-                .expectHeader().contentType(MediaType.APPLICATION_JSON)
-                .expectBody()
-                .jsonPath("$.path").isEqualTo("/product-composite/" + PRODUCT_ID_NOT_FOUND)
-                .jsonPath("$.message").isEqualTo("NOT FOUND: " + PRODUCT_ID_NOT_FOUND);
+        getAndVerifyProduct(PRODUCT_ID_NOT_FOUND, HttpStatus.NOT_FOUND)
+            .jsonPath("$.path").isEqualTo("/product-composite/" + PRODUCT_ID_NOT_FOUND)
+            .jsonPath("$.message").isEqualTo("NOT FOUND: " + PRODUCT_ID_NOT_FOUND);
     }
 
     @Test
     public void getProductInvalidInput(){
-        webTestClient.get()
-                .uri("/product-composite/" + PRODUCT_ID_INVALID)
+        getAndVerifyProduct(PRODUCT_ID_INVALID, HttpStatus.UNPROCESSABLE_ENTITY)
+            .jsonPath("$.path").isEqualTo("/product-composite/" + PRODUCT_ID_INVALID)
+            .jsonPath("$.message").isEqualTo("INVALID: " + PRODUCT_ID_INVALID);
+    }
+
+    private WebTestClient.BodyContentSpec getAndVerifyProduct(int productId, HttpStatus expectedStatus){
+        return webTestClient.get()
+                .uri("/product-composite/" + productId)
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
-                .expectStatus().isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY)
+                .expectStatus().isEqualTo(expectedStatus)
                 .expectHeader().contentType(MediaType.APPLICATION_JSON)
-                .expectBody()
-                .jsonPath("$.path").isEqualTo("/product-composite/" + PRODUCT_ID_INVALID)
-                .jsonPath("$.message").isEqualTo("INVALID: " + PRODUCT_ID_INVALID);
+                .expectBody();
     }
 }

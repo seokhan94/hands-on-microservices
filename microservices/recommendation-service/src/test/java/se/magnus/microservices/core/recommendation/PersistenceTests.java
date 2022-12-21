@@ -12,6 +12,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import reactor.test.StepVerifier;
 import se.magnus.microservices.core.recommendation.persistence.RecommendationEntity;
 import se.magnus.microservices.core.recommendation.persistence.RecommendationRepository;
 
@@ -32,87 +33,109 @@ public class PersistenceTests {
 
     @BeforeEach
     public void setUpDB(){
-        recommendationRepository.deleteAll();
+        StepVerifier.create(recommendationRepository.deleteAll())
+                .verifyComplete();
 
         RecommendationEntity recommendation = new RecommendationEntity(1, 1, "test", 90, "test content");
-        savedEntity = recommendationRepository.save(recommendation);
 
-        assertEqualsRecommendation(recommendation, savedEntity);
+        StepVerifier.create(recommendationRepository.save(recommendation))
+                .expectNextMatches(createEntity -> {
+                    savedEntity = createEntity;
+                    return areRecommendationEqual(recommendation, savedEntity);
+                })
+                .verifyComplete();
     }
 
     @Test
     @DisplayName("상품 리뷰 등록 테스트")
     public void create(){
         RecommendationEntity newEntity = new RecommendationEntity(1, 2, "test", 30, "test content");
-        recommendationRepository.save(newEntity);
 
-        RecommendationEntity foundEntity = recommendationRepository.findById(newEntity.getId()).get();
-        assertEqualsRecommendation(newEntity, foundEntity);
+        StepVerifier.create(recommendationRepository.save(newEntity))
+                .expectNextMatches(createEntity -> areRecommendationEqual(newEntity, createEntity))
+                .verifyComplete();
 
-        assertEquals(2, recommendationRepository.count());
+        StepVerifier.create(recommendationRepository.findById(newEntity.getId()))
+                .expectNextMatches(foundEntity -> areRecommendationEqual(newEntity, foundEntity))
+                .verifyComplete();
+
+        StepVerifier.create(recommendationRepository.count())
+                .expectNext(2L)
+                .verifyComplete();
     }
 
     @Test
     @DisplayName("상품 리뷰 수정 테스트")
     public void update(){
         savedEntity.setAuthor("test2");
-        recommendationRepository.save(savedEntity);
 
-        RecommendationEntity foundEntity = recommendationRepository.findById(savedEntity.getId()).get();
-        assertEquals(1, foundEntity.getVersion());
-        assertEquals("test2", foundEntity.getAuthor());
+        StepVerifier.create(recommendationRepository.save(savedEntity))
+            .expectNextMatches(updatedEntity -> updatedEntity.getAuthor().equals("test2"))
+            .verifyComplete();
+
+        StepVerifier.create(recommendationRepository.findById(savedEntity.getId()))
+                .expectNextMatches(foundEntity -> foundEntity.getVersion() == 1 && foundEntity.getAuthor().equals("test2"))
+                .verifyComplete();
     }
 
     @Test
     @DisplayName("상품 리뷰 삭제 테스트")
     public void delete(){
-        recommendationRepository.delete(savedEntity);
-        assertFalse(recommendationRepository.existsById(savedEntity.getId()));
+
+        StepVerifier.create(recommendationRepository.delete(savedEntity))
+                .verifyComplete();
+
+        StepVerifier.create(recommendationRepository.existsById(savedEntity.getId()))
+            .expectNext(false)
+            .verifyComplete();
     }
 
     @Test
     @DisplayName("상품 리뷰 조회")
     public void getByProductId(){
-        List<RecommendationEntity> entityList = recommendationRepository.findByProductId(savedEntity.getProductId());
-
-        assertEquals(entityList.size(), 1);
-        assertEqualsRecommendation(savedEntity, entityList.get(0));
+        StepVerifier.create(recommendationRepository.findByProductId(savedEntity.getProductId()))
+                .expectNextMatches(foundEntity -> areRecommendationEqual(savedEntity, foundEntity))
+                .verifyComplete();
     }
 
     @Test
     @DisplayName("유니크 값(productId, recommendationId) 검증")
     public void duplicateError(){
         RecommendationEntity entity = new RecommendationEntity(1, 1, "test", 30, "test content");
-        assertThrows(DuplicateKeyException.class, () -> {
-            recommendationRepository.save(entity);
-        });
+        StepVerifier.create(recommendationRepository.save(entity))
+            .expectError(DuplicateKeyException.class)
+            .verify();
     }
 
     @Test
+    @DisplayName("낙관적 락 매커니즘 단위 테스트")
     public void optimisticLockError(){
-        RecommendationEntity entity1 = recommendationRepository.findById(savedEntity.getId()).get();
-        RecommendationEntity entity2 = recommendationRepository.findById(savedEntity.getId()).get();
+        RecommendationEntity entity1 = recommendationRepository.findById(savedEntity.getId()).block();
+        RecommendationEntity entity2 = recommendationRepository.findById(savedEntity.getId()).block();
 
         entity1.setAuthor("test1");
-        recommendationRepository.save(entity1);
+        recommendationRepository.save(entity1).block();
 
-        assertThrows(OptimisticLockingFailureException.class, () -> {
-            entity2.setAuthor("test2");
-            recommendationRepository.save(entity2);
-        });
 
-        RecommendationEntity updatedEntity = recommendationRepository.findById(savedEntity.getId()).get();
-        assertEquals(1, updatedEntity.getVersion());
-        assertEquals("test1", updatedEntity.getAuthor());
+        entity2.setAuthor("test2");
+        StepVerifier.create(recommendationRepository.save(entity2))
+            .expectError(OptimisticLockingFailureException.class)
+            .verify();
+
+        StepVerifier.create(recommendationRepository.findById(savedEntity.getId()))
+            .expectNextMatches(foundEntity -> foundEntity.getVersion() == 1 && foundEntity.getAuthor().equals("test1"))
+            .verifyComplete();
     }
 
-    private void assertEqualsRecommendation(RecommendationEntity expectedEntity, RecommendationEntity actualEntity){
-        assertEquals(expectedEntity.getId(), actualEntity.getId());
-        assertEquals(expectedEntity.getVersion(), actualEntity.getVersion());
-        assertEquals(expectedEntity.getProductId(), actualEntity.getProductId());
-        assertEquals(expectedEntity.getRecommendationId(), actualEntity.getRecommendationId());
-        assertEquals(expectedEntity.getAuthor(), actualEntity.getAuthor());
-        assertEquals(expectedEntity.getRating(), actualEntity.getRating());
-        assertEquals(expectedEntity.getContent(), actualEntity.getContent());
+    private boolean areRecommendationEqual(RecommendationEntity expectedEntity, RecommendationEntity actualEntity) {
+        return (
+                expectedEntity.getId().equals(actualEntity.getId()) &&
+                        expectedEntity.getVersion() == actualEntity.getVersion() &&
+                        expectedEntity.getProductId() == actualEntity.getProductId() &&
+                        expectedEntity.getRecommendationId() == actualEntity.getRecommendationId() &&
+                        expectedEntity.getAuthor().equals(actualEntity.getAuthor()) &&
+                        expectedEntity.getRating() == actualEntity.getRating() &&
+                        expectedEntity.getContent().equals(actualEntity.getContent())
+        );
     }
 }

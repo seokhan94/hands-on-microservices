@@ -1,9 +1,5 @@
 package se.magnus.microservices.core.review.persistence;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 import javax.persistence.*;
 
 @Entity
@@ -13,9 +9,6 @@ import javax.persistence.*;
                 @Index(name = "reviews_unique_idx", unique = true, columnList = "productId,reviewId")
         }
 )
-@NoArgsConstructor
-@Getter
-@Setter
 public class ReviewEntity {
 
     @Id @GeneratedValue
@@ -35,6 +28,65 @@ public class ReviewEntity {
         this.reviewId = reviewId;
         this.author = author;
         this.subject = subject;
+        this.content = content;
+    }
+
+    public ReviewEntity() {
+    }
+
+    public int getId() {
+        return this.id;
+    }
+
+    public int getVersion() {
+        return this.version;
+    }
+
+    public int getProductId() {
+        return this.productId;
+    }
+
+    public int getReviewId() {
+        return this.reviewId;
+    }
+
+    public String getAuthor() {
+        return this.author;
+    }
+
+    public String getSubject() {
+        return this.subject;
+    }
+
+    public String getContent() {
+        return this.content;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
+    }
+
+    public void setProductId(int productId) {
+        this.productId = productId;
+    }
+
+    public void setReviewId(int reviewId) {
+        this.reviewId = reviewId;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
+
+    public void setContent(String content) {
         this.content = content;
     }
 }
