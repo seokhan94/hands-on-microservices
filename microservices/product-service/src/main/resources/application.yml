@@ -3,6 +3,13 @@ server:
   error:
     include-message: always
 
+spring.application.name: product
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
 logging:
   level:
     root: INFO
@@ -62,3 +69,8 @@ server.port: 8080
 
 spring.rabbitmq.host: rabbitmq
 spring.cloud.stream.kafka.binder.brokers: kafka
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka:8761/eureka/

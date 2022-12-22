@@ -23,6 +23,9 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-stream-kafka:3.1.1'
     testImplementation 'org.springframework.cloud:spring-cloud-stream-test-support:3.1.1'
 
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:3.1.4'
+    implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer:3.1.4'
+
     // https://mvnrepository.com/artifact/org.mapstruct/mapstruct
     implementation 'org.mapstruct:mapstruct:1.5.3.Final'
     // https://mvnrepository.com/artifact/org.mapstruct/mapstruct-processor

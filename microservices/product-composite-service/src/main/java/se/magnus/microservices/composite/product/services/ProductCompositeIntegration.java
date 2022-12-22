@@ -2,7 +2,6 @@ package se.magnus.microservices.composite.product.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.annotation.Output;
@@ -35,29 +34,21 @@ import static se.magnus.api.event.Event.Type.DELETE;
 public class ProductCompositeIntegration implements ProductService, RecommendationService, ReviewService {
 
     private final ObjectMapper objectMapper;
-    private final String productServiceUrl;
-    private final String recommendationServiceUrl;
-    private final String reviewServiceUrl;
+    private final String productServiceUrl = "http://product";
+    private final String recommendationServiceUrl = "http://recommendation";
+    private final String reviewServiceUrl = "http://review";
 
-    private final WebClient webClient;
+    private final WebClient.Builder webClientBuilder;
+    private WebClient webClient;
     private MessageSources messageSources;
 
     public ProductCompositeIntegration(
             ObjectMapper objectMapper,
-            WebClient.Builder webClient,
-            MessageSources messageSources,
-            @Value("${app.product-service.host}") String productServiceHost,
-            @Value("${app.product-service.port}") int productServicePort,
-            @Value("${app.recommendation-service.host}") String recommendationServiceHost,
-            @Value("${app.recommendation-service.port}") int recommendationServicePort,
-            @Value("${app.review-service.host}") String reviewServiceHost,
-            @Value("${app.review-service.port}") int reviewServicePort) {
+            WebClient.Builder webClientBuilder,
+            MessageSources messageSources) {
         this.objectMapper = objectMapper;
-        this.webClient = webClient.build();
+        this.webClientBuilder = webClientBuilder;
         this.messageSources = messageSources;
-        this.productServiceUrl = "http://" + productServiceHost + ":" + productServicePort;
-        this.recommendationServiceUrl = "http://" + recommendationServiceHost + ":" + recommendationServicePort ;
-        this.reviewServiceUrl = "http://" + reviewServiceHost+ ":" + reviewServicePort ;
     }
 
     public interface MessageSources {
@@ -78,7 +69,7 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         String url = productServiceUrl + "/product/" + productId;
         log.debug("Will call the getProduct API on URL: {}", url);
 
-        return webClient.get().uri(url)
+        return getWebClient().get().uri(url)
                 .retrieve()
                 .bodyToMono(Product.class)
                 .log()
@@ -109,7 +100,7 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
     public Flux<Recommendation> getRecommendations(int productId) {
         String url = recommendationServiceUrl + "/recommendation?productId=" + productId;
         log.debug("Will call getRecommendations API on URL: {}", url);
-        return webClient
+        return getWebClient()
                 .get()
                 .uri(url)
                 .retrieve()
@@ -134,7 +125,7 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         String url = reviewServiceUrl + "/review?productId=" + productId;
         log.debug("Will call getReviews API on URL: {}", url);
 
-        return webClient
+        return getWebClient()
                 .get()
                 .uri(url)
                 .retrieve()
@@ -154,6 +145,13 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         messageSources.outputReviews().send(MessageBuilder.withPayload(new Event(DELETE, productId, null)).build());
     }
 
+    private WebClient getWebClient(){
+        if(webClient == null)  {
+            webClient = webClientBuilder.build();
+        }
+        return webClient;
+    }
+
     public Mono<Health> getProductHealth(){
         return getHealth(productServiceUrl);
     }
@@ -170,7 +168,7 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         url += "/actuator/health";
         log.debug("Will call the Health API on URL: {}", url);
 
-        return webClient.get()
+        return getWebClient().get()
                 .uri(url)
                 .retrieve()
                 .bodyToMono(Health.class)

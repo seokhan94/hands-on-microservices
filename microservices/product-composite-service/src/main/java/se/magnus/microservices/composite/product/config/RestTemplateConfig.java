@@ -1,4 +1,4 @@
-package se.magnus.microservices.composite.product.common;
+package se.magnus.microservices.composite.product.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
