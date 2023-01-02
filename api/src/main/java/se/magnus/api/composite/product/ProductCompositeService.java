@@ -34,7 +34,7 @@ public interface ProductCompositeService {
     @PostMapping(
             value    = "/product-composite",
             consumes = "application/json")
-    void createCompositeProduct(@RequestBody ProductAggregate body);
+    Mono<Void> createCompositeProduct(@RequestBody ProductAggregate body);
 
     @ApiOperation(
             value = "${api.product-composite.delete-composite-product.description}",
@@ -44,5 +44,5 @@ public interface ProductCompositeService {
             @ApiResponse(code = 422, message = "Unprocessable entity, input parameters caused the processing to fail. See response message for more information.")
     })
     @DeleteMapping(value = "/product-composite/{productId}")
-    void deleteCompositeProduct(@PathVariable int productId);
+    Mono<Void>  deleteCompositeProduct(@PathVariable int productId);
 }

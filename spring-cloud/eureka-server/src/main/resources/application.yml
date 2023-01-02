@@ -1,6 +1,10 @@
 server:
   port: 8761
 
+app:
+  eureka-username: u
+  eureka-password: p
+
 eureka:
   instance:
     hostname: localhost
@@ -10,8 +14,8 @@ eureka:
     service-url:
       defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
   server:
-    eviction-interval-timer-in-ms: 60000
-    renewal-percent-threshold: 0.85
+    wait-time-in-ms-when-sync-empty: 0
+    response-cache-update-interval-ms: 5000
 
 management:
   endpoints:

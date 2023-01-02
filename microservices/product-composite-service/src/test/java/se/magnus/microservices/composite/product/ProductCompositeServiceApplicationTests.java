@@ -20,7 +20,9 @@ import se.magnus.util.exceptions.NotFoundException;
 
 import java.util.Collections;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {"eureka.client.enabled=false"})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        classes = {ProductCompositeServiceApplication.class, TestSecurityConfig.class},
+        properties = {"eureka.client.enabled=false", "spring.main.allow-bean-definition-overriding=true"})
 public class ProductCompositeServiceApplicationTests {
     private static final int PRODUCT_ID_OK = 1;
     private static final int PRODUCT_ID_NOT_FOUND = 2;

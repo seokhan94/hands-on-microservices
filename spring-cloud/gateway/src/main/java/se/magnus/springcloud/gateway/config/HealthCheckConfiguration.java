@@ -21,6 +21,7 @@ public class HealthCheckConfiguration {
         this.statusAggregator = statusAggregator;
     }
 
+    // TODO: Health Check Aggregator Configuration 추가
     private Mono<Health> getHealth(String url){
         url += "/actuator/health";
         log.debug("Will call the Health API on URL: {}", url);

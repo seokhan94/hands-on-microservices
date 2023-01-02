@@ -1,12 +1,32 @@
 server:
-  port: 8080
+  port: 8443
+  ssl:
+    key-store-type: PKCS12
+    key-store: classpath:keystore/edge.p12
+    key-store-password: password
+    key-alias: localhost
 
-app.eureka-server: localhost
+app:
+  eureka-username: u
+  eureka-password: p
+  eureka-server: localhost
+  auth-server: localhost
 
+eureka:
+  client:
+    service-url:
+      defaultZone: "http://${app.eureka-username}:${app.eureka-password}@${app.eureka-server}:8761/eureka/"
 
 spring:
   application:
     name: gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://${app.auth-server}:9999/.well-known/jwks.json
+#  config:
+#    import: application-auth0.yml  # Auth0로 authentication 변경
   cloud:
     gateway:
       routes:
@@ -14,6 +34,11 @@ spring:
           uri: lb://product-composite
           predicates:
             - Path=/product-composite/**
+
+        - id: oauth-server
+          uri: lb://auth-server
+          predicates:
+            - Path=/oauth/**
 
         - id: eureka-api
           uri: http://${app.eureka-server}:8761
@@ -57,11 +82,6 @@ spring:
           filters:
             - SetPath=/501
 
-eureka:
-  client:
-    service-url:
-      defaultZone: http://${app.eureka-server}:8761/eureka/
-
 ribbon.ServerListRefreshInterval: 5000
 ribbon.NFLoadBalancerPingInterval: 5
 
@@ -80,4 +100,6 @@ spring:
     activate:
       on-profile: docker
 
-app.eureka-server: eureka
+app:
+  eureka-server: eureka
+  auth-server: auth-server

@@ -53,6 +53,7 @@ logging:
   level:
     root: INFO
     se.magnus: DEBUG
+    org.springframework.web.server.adapter.HttpWebHandlerAdapter: TRACE
 
 spring.cloud.stream:
   defaultBinder: rabbit
@@ -84,12 +85,27 @@ spring.rabbitmq:
 management.endpoint.health.show-details: "ALWAYS"
 management.endpoints.web.exposure.include: "*"
 
-spring.application.name: product-composite
+spring:
+  application:
+    name: product-composite
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://${app.auth-server}:9999/.well-known/jwks.json
+#  config:
+#    import: application-auth0.yml  # Auth0로 authentication 변경
+
+app:
+  eureka-username: u
+  eureka-password: p
+  eureka-server: localhost
+  auth-server: localhost
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: "http://${app.eureka-username}:${app.eureka-password}@${app.eureka-server}:8761/eureka/"
 
 
 ribbon.ServerListRefreshInterval: 5000
@@ -105,7 +121,7 @@ server:
 
 spring.rabbitmq.host: rabbitmq
 spring.cloud.stream.kafka.binder.brokers: kafka
-eureka:
-  client:
-    service-url:
-      defaultZone: http://eureka:8761/eureka/
+
+app:
+  eureka-server: eureka
+  auth-server: auth-server
