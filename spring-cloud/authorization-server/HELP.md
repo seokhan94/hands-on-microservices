@@ -102,3 +102,105 @@ curl -k https://writer:secret@localhost:8443/oauth/token \
   "jti": "GZbXCqTmclRoi_szJvK7tsTtGp0"
 }
 ```
+
+## OpenID Connect(Auth0) 공급자 
+
+### 암호 승인 흐름을 사용해 접근 토큰 획득
+
+* reader 클라이언트를 위한 접근 토큰
+```
+
+curl --request POST \
+--url "https://${TENANT_DOMAIN_NAME}/oauth/token" \
+--header "content-type:application/json" \
+--data "{\"grant_type\":\"password\", \"username\":\"${USER_EMAIL}\", \"password\":\"${USER_PASSWORD}\", \"audience\":\"https://localhost:8443/product-composite\", \"scope\": \"openid email product:read\", \"client_id\": \"${CLIENT_ID}\", \"client_secret\": \"${CLIENT_SECRET}\"}" -s | jq 
+
+curl --request POST --url https://dev-mx40pctqun8r1ktx.us.auth0.com/oauth/token --header 'content-type: application/json' --data '{"client_id":"PYeHvJS4OKx0BBDejY8sXHykgJxa16B7","client_secret":"yAE5mpbyQ4NcjIwgBNk_SsMYNpKLJ-N8-Bh0hHU32-ezS8lsuC2rSQm3hqVuQgMe","audience":"https://localhost:8443/product-composite","scope": "openid email product:write product:read","grant_type":"password", "username":"seokhan94@naver.com", "password":"1q2w3e4r!"}' -s | jq
+
+{
+  "access_token": "eyJhbGciOi...I9pzBjUoQv1Q6mpJQ",
+  "id_token": "eyJhbGc...skkprFo3OlnBQ",
+  "scope": "openid email product:read",
+  "expires_in": 86400,
+  "token_type": "Bearer"
+}
+
+```
+
+* writer 클라이언트를 위한 접근 토큰
+```
+
+curl --request POST \
+--url "https://${TENANT_DOMAIN_NAME}/oauth/token" \
+--header "content-type:application/json" \
+--data "{\"grant_type\":\"password\", \"username\":\"${USER_EMAIL}\", \"password\":\"${USER_PASSWORD}\", \"audience\":\"https://localhost:8443/product-composite\", \"scope\": \"openid email product:read product:write\", \"client_id\": \"${CLIENT_ID}\", \"client_secret\": \"${CLIENT_SECRET}\"}" -s | jq
+
+{
+  "access_token": "eyJhbGciOiJ...KQ9ZQHTkSw",
+  "id_token": "eyJhbGc...FQai5TymA",
+  "scope": "openid email product:read product:write",
+  "expires_in": 86400,
+  "token_type": "Bearer"
+}
+
+```
+
+### 묵시적 승인 흐름을 사용해 접근 토큰 획득
+* reader 클라이언트를 위한 접근 토큰
+```
+
+https://${TENANT_DOMAIN_NAME}/authorize?response_type=token&scope=openid email product:read&client_id=${CLIENT_ID}&state=98421&&nonce=jxdlsjfi0fa&redirect_uri=http://my.redirect.uri&audience=https://localhost:8443/product-composite
+http://my.redirect.uri/#access_token=eyJhbG...RcioQlXgtcfdM-acfzXQ&scope=openid%20email%20product%3Aread%20product%3Awrite&expires_in=7200&token_type=Bearer&state=98421
+```
+
+* writer 클라이언트를 위한 접근 토큰
+```
+https://${TENANT_DOMAIN_NAME}/authorize?response_type=token&scope=openid email product:read product:write&client_id=${CLIENT_ID}&state=98421&&nonce=jxdlsjfi0fa&redirect_uri=http://my.redirect.uri&audience=https://localhost:8443/product-composite
+http://my.redirect.uri/#access_token=eyJhbGciO...qy7ST4ixuLA&scope=openid%20email%20product%3Aread&expires_in=7200&token_type=Bearer&state=98421
+```
+
+### 코드 승인 흐름을 사용해 접근 토큰 획득
+* reader 클라이언트를 위한 접근 토큰
+```
+https://${TENANT_DOMAIN_NAME}/authorize?response_type=code&scope=openid email product:read&client_id=${CLIENT_ID}&state=98421&&nonce=jxdlsjfi0fa&redirect_uri=http://my.redirect.uri&audience=https://localhost:8443/product-composite
+http://my.redirect.uri/?code=9D-WrKIwD2B43AemyqnbMaI_X_nrynAjLqE8Vfr8TeDRs&state=98421
+
+curl --request POST --url https://${TENANT_DOMAIN_NAME}/oauth/token --header 'content-type: application/json' --data '{"grant_type":"authorization_code", "client_id":"${CLIENT_ID}", "client_secret":"${CLIENT_SECRET}", "code":"${CODE}", "redirect_uri":"http://my.redirect.uri"}' -s |jq .
+
+{
+  "access_token": "eyJhbGciOi...iU5vt4ku0xJpUvpSrA",
+  "id_token": "eyJh...TriFeL6YCiI21qkgsw",
+  "scope": "openid email product:read",
+  "expires_in": 86400,
+  "token_type": "Bearer"
+}
+```
+
+* writer 클라이언트를 위한 접근 토큰
+```
+https://${TENANT_DOMAIN_NAME}/authorize?response_type=code&scope=openid email product:read product:write&client_id=${CLIENT_ID}&state=98421&&nonce=jxdlsjfi0fa&redirect_uri=http://my.redirect.uri&audience=https://localhost:8443/product-composite
+http://my.redirect.uri/?code=dYPANJ3nqD8KXkrDRkTarovAJRLuZR_9baQHMeAt8J7Ke&state=98421
+
+curl --request POST --url https://${TENANT_DOMAIN_NAME}/oauth/token --header 'content-type: application/json' --data '{"grant_type":"authorization_code", "client_id":"${CLIENT_ID}", "client_secret":"${CLIENT_SECRET}", "code":"${CODE}", "redirect_uri":"http://my.redirect.uri"}' -s |jq .
+
+{
+  "access_token": "eyJhbGciO...HmHep3DBAwzTKVISKxew",
+  "id_token": "eyJhbGc...9mHY35xa6vKnhl0Q",
+  "scope": "openid email product:read product:write",
+  "expires_in": 86400,
+  "token_type": "Bearer"
+}
+```
+
+
+#### 추가적인 사용자 정보를 제공하는 API를 구현하고 싶다면 Auth0의 userinfo_endpoint를 호출하면 된다.
+#### OpenID 디스커버리 엔드포인트를 호출하면 엔드포인트 주소를 확인할 수 있다.
+
+```
+curl -H "Authorization: Bearer $ACCESS_TOKEN" https://${TENANT_DOMAIN_NAME}/userinfo -s | jq
+{
+  "sub": "auth0|63b1b...14",
+  "email": "seokhan94@naver.com",
+  "email_verified": true
+}
+```
