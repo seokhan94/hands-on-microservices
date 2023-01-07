@@ -22,7 +22,7 @@ import java.util.Collections;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         classes = {ProductCompositeServiceApplication.class, TestSecurityConfig.class},
-        properties = {"eureka.client.enabled=false", "spring.main.allow-bean-definition-overriding=true"})
+        properties = {"spring.main.allow-bean-definition-overriding=true","eureka.client.enabled=false","spring.cloud.config.enabled=false"})
 public class ProductCompositeServiceApplicationTests {
     private static final int PRODUCT_ID_OK = 1;
     private static final int PRODUCT_ID_NOT_FOUND = 2;

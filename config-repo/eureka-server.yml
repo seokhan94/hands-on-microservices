@@ -1,10 +1,6 @@
 server:
   port: 8761
 
-app:
-  eureka-username: u
-  eureka-password: p
-
 eureka:
   instance:
     hostname: localhost
@@ -16,9 +12,3 @@ eureka:
   server:
     wait-time-in-ms-when-sync-empty: 0
     response-cache-update-interval-ms: 5000
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"

@@ -13,7 +13,7 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class JdbcSchedulerConfig {
 
-    @Value("${spring.datasource.maximum-pool-size}")
+    @Value("${spring.datasource.maximum-pool-size:10}")
     private Integer connectionPoolSize;
 
     @Bean

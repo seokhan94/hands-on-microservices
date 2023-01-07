@@ -35,3 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
+
+
+.env
+auth0-test-variables.bash
+*auth0.yml

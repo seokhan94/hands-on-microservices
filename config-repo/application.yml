@@ -1,0 +1,40 @@
+app:
+  eureka-username: u
+  eureka-password: '{cipher}0b15c0ce1791a06a62fe9443425fd7a8019bbe4e4dc6e07b6fed573956f6d4c6'
+  eureka-server: localhost
+  auth-server: localhost
+
+eureka:
+  client:
+    service-url:
+      defaultZone: 'http://${app.eureka-username}:${app.eureka-password}@${app.eureka-server}:8761/eureka/'
+
+spring.rabbitmq:
+  host: localhost
+  port: 5672
+  username: guest
+  password: '{cipher}138a5ffbc270b204acef5cc577066007d3106e58355e24460e7bafd2ab7f47b7'
+
+spring.cloud.stream.kafka.binder:
+  brokers: localhost
+  defaultBrokerPort: 9092
+
+management.endpoint.health.show-details: "ALWAYS"
+management.endpoints.web.exposure.include: "*"
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  rabbitmq:
+    host: rabbitmq
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: kafka
+
+app:
+  eureka-server: eureka
+  auth-server: auth-server

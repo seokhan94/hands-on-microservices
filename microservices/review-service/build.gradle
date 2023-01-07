@@ -26,15 +26,16 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:3.1.4'
     implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer:3.1.4'
 
-    // https://mvnrepository.com/artifact/org.mapstruct/mapstruct
+    implementation 'org.springframework.cloud:spring-cloud-starter-config:3.1.5'
+    implementation 'org.springframework.cloud:spring-cloud-starter-bootstrap:3.1.0'
+    implementation 'org.springframework.retry:spring-retry'
+
     implementation 'org.mapstruct:mapstruct:1.5.3.Final'
-    // https://mvnrepository.com/artifact/org.mapstruct/mapstruct-processor
     implementation 'org.mapstruct:mapstruct-processor:1.5.3.Final'
     compileOnly 'org.mapstruct:mapstruct-processor:1.5.3.Final'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.3.Final'
     testAnnotationProcessor 'org.mapstruct:mapstruct-processor:1.5.3.Final'
 
-    // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-data-jpa
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa:2.7.6'
     implementation 'mysql:mysql-connector-java'
     testImplementation 'com.h2database:h2'

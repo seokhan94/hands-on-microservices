@@ -3,18 +3,6 @@ server:
   error:
     include-message: always
 
-spring.application.name: review
-
-app:
-  eureka-username: u
-  eureka-password: p
-  eureka-server: localhost
-
-eureka:
-  client:
-    service-url:
-      defaultZone: "http://${app.eureka-username}:${app.eureka-password}@${app.eureka-server}:8761/eureka/"
-
 logging:
   level:
     root: INFO
@@ -54,19 +42,6 @@ spring.cloud.stream.rabbit.bindings.input.consumer:
 spring.cloud.stream.kafka.bindings.input.consumer:
   enableDlq: true
 
-spring.cloud.stream.kafka.binder:
-  brokers: 127.0.0.1
-  defaultBrokerPort: 9092
-
-spring.rabbitmq:
-  host: 127.0.0.1
-  port: 5672
-  username: guest
-  password: guest
-
-management.endpoint.health.show-details: "ALWAYS"
-management.endpoints.web.exposure.include: "*"
-
 ---
 spring:
   config:
@@ -77,9 +52,39 @@ spring:
 server:
   port: 8080
 
-spring.rabbitmq.host: rabbitmq
+---
+spring:
+  config:
+    activate:
+      on-profile: streaming_partitioned
 
-spring.cloud.stream.kafka.binder.brokers: kafka
+spring.cloud.stream.bindings.input.consumer:
+  partitioned: true
+  instanceCount: 2
 
-app:
-  eureka-server: eureka
+---
+spring:
+  config:
+    activate:
+      on-profile: streaming_instance_0
+
+spring.cloud.stream.bindings.input.consumer:
+  instanceIndex: 0
+
+---
+spring:
+  config:
+    activate:
+      on-profile: streaming_instance_1
+spring.cloud.stream.bindings.input.consumer:
+  instanceIndex: 1
+
+---
+spring:
+  config:
+    activate:
+      on-profile: kafka
+
+management.health.rabbit.enabled: false
+spring.cloud.stream:
+  defaultBinder: kafka

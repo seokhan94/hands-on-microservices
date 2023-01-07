@@ -21,7 +21,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestPropertySource(properties = "spring.mongodb.embedded.version=3.5.5")
-@DataMongoTest
+@DataMongoTest(properties = {"spring.cloud.config.enabled=false"})
 @EnableAutoConfiguration(exclude = EmbeddedMongoAutoConfiguration.class)
 @ExtendWith(SpringExtension.class)
 public class PersistenceTests {

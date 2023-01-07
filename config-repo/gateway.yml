@@ -6,27 +6,14 @@ server:
     key-store-password: password
     key-alias: localhost
 
-app:
-  eureka-username: u
-  eureka-password: p
-  eureka-server: localhost
-  auth-server: localhost
-
-eureka:
-  client:
-    service-url:
-      defaultZone: "http://${app.eureka-username}:${app.eureka-password}@${app.eureka-server}:8761/eureka/"
+app.config-server: localhost
 
 spring:
-  application:
-    name: gateway
   security:
     oauth2:
       resourceserver:
         jwt:
           jwk-set-uri: http://${app.auth-server}:9999/.well-known/jwks.json
-#  config:
-#    import: application-auth0.yml  # Auth0로 authentication 변경
   cloud:
     gateway:
       routes:
@@ -39,6 +26,13 @@ spring:
           uri: lb://auth-server
           predicates:
             - Path=/oauth/**
+
+        - id: config-server
+          uri: http://${app.config-server}:8888
+          predicates:
+            - Path=/config/**
+          filters:
+            - RewritePath=/config/(?<segment>.*), /$\{segment}
 
         - id: eureka-api
           uri: http://${app.eureka-server}:8761
@@ -85,14 +79,12 @@ spring:
 ribbon.ServerListRefreshInterval: 5000
 ribbon.NFLoadBalancerPingInterval: 5
 
-management.endpoint.health.show-details: "ALWAYS"
-management.endpoints.web.exposure.include: "*"
-
 logging:
   level:
     root: INFO
     org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator: INFO
     org.springframework.cloud.gateway: TRACE
+    org.springframework.web.server.adapter.HttpWebHandlerAdapter: TRACE
 
 ---
 spring:
@@ -100,6 +92,4 @@ spring:
     activate:
       on-profile: docker
 
-app:
-  eureka-server: eureka
-  auth-server: auth-server
+app.config-server: config-server

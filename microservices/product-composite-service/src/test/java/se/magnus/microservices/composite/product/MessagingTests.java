@@ -34,7 +34,7 @@ import static se.magnus.microservices.composite.product.IsSameEvent.sameEventExc
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         classes = {ProductCompositeServiceApplication.class, TestSecurityConfig.class},
-        properties = {"eureka.client.enabled=false", "spring.main.allow-bean-definition-overriding=true"})
+        properties = {"eureka.client.enabled=false", "spring.main.allow-bean-definition-overriding=true", "spring.cloud.config.enabled=false"})
 public class MessagingTests {
 
     @Autowired
