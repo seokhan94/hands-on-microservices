@@ -1,7 +1,9 @@
 package se.magnus.microservices.composite.product.services;
 
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.integration.handler.advice.RequestHandlerCircuitBreakerAdvice;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextImpl;
@@ -13,6 +15,7 @@ import se.magnus.api.composite.product.*;
 import se.magnus.api.core.product.Product;
 import se.magnus.api.core.recommendation.Recommendation;
 import se.magnus.api.core.review.Review;
+import se.magnus.util.exceptions.NotFoundException;
 import se.magnus.util.http.ServiceUtil;
 
 import java.net.URL;
@@ -29,18 +32,27 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
     private final ProductCompositeIntegration productCompositeIntegration;
 
     @Override
-    public Mono<ProductAggregate> getCompositeProduct(int productId) {
+    public Mono<ProductAggregate> getCompositeProduct(int productId, int delay, int faultPercent) {
 
         return Mono
                 .zip(
                     values -> createProductAggregation((SecurityContext) values[0], (Product) values[1], (List<Recommendation>) values[2], (List<Review>) values[3], serviceUtil.getServiceAddress()),
                     ReactiveSecurityContextHolder.getContext().defaultIfEmpty(nullSC),
-                    productCompositeIntegration.getProduct(productId),
+                    productCompositeIntegration.getProduct(productId, delay, faultPercent)
+                            .onErrorReturn(CallNotPermittedException.class, getProductFallbackValue(productId)),
                     productCompositeIntegration.getRecommendations(productId).collectList(),
                     productCompositeIntegration.getReviews(productId).collectList()
                 )
                 .doOnError(ex -> log.warn("getCompositeProduct failed: {}", ex.toString()))
                 .log();
+    }
+
+    private Product getProductFallbackValue(int productId) {
+        if(productId == 13){
+            throw new NotFoundException("Product Id: " + productId + " not found in fallback cache!");
+        }
+
+        return new Product(productId, "Fallback product" + productId, productId, serviceUtil.getServiceAddress());
     }
 
     @Override

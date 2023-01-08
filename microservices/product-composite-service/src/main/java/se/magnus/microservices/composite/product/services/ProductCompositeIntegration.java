@@ -1,7 +1,10 @@
 package se.magnus.microservices.composite.product.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.annotation.Output;
@@ -10,6 +13,8 @@ import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import se.magnus.api.core.product.Product;
@@ -24,6 +29,8 @@ import se.magnus.util.exceptions.NotFoundException;
 import se.magnus.util.http.HttpErrorInfo;
 
 import java.io.IOException;
+import java.net.URI;
+import java.time.Duration;
 
 import static se.magnus.api.event.Event.Type.CREATE;
 import static se.magnus.api.event.Event.Type.DELETE;
@@ -41,6 +48,9 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
     private final WebClient.Builder webClientBuilder;
     private WebClient webClient;
     private MessageSources messageSources;
+
+    @Value("${app.product-service.timeoutSec}")
+    private int productServiceTimeoutSec;
 
     public ProductCompositeIntegration(
             ObjectMapper objectMapper,
@@ -65,15 +75,19 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
     }
 
     @Override
-    public Mono<Product> getProduct(int productId) {
-        String url = productServiceUrl + "/product/" + productId;
+    @CircuitBreaker(name = "product")
+    @Retry(name = "product")
+    public Mono<Product> getProduct(int productId, int delay, int faultPercent) {
+        URI url = UriComponentsBuilder.fromUriString(productServiceUrl + "/product/{productId}?delay={delay}&faultPercent={faultPercent}")
+                        .build(productId, delay, faultPercent);
         log.debug("Will call the getProduct API on URL: {}", url);
 
         return getWebClient().get().uri(url)
                 .retrieve()
                 .bodyToMono(Product.class)
                 .log()
-                .onErrorMap(WebClientResponseException.class, ex -> handleException(ex));
+                .onErrorMap(WebClientResponseException.class, ex -> handleException(ex))
+                .timeout(Duration.ofSeconds(productServiceTimeoutSec));
     }
 
     @Override
@@ -87,18 +101,10 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         messageSources.outputProducts().send(MessageBuilder.withPayload(new Event(DELETE, productId, null)).build());
     }
 
-    private String getErrorMessage(WebClientResponseException e) {
-        try {
-            return objectMapper.readValue(e.getResponseBodyAsString(), HttpErrorInfo.class).getMessage();
-        }catch (IOException ioException){
-            return ioException.getMessage();
-        }
-    }
-
-
     @Override
     public Flux<Recommendation> getRecommendations(int productId) {
-        String url = recommendationServiceUrl + "/recommendation?productId=" + productId;
+        URI url = UriComponentsBuilder.fromUriString(recommendationServiceUrl + "/recommendation?productId={productId}")
+                        .build(productId);
         log.debug("Will call getRecommendations API on URL: {}", url);
         return getWebClient()
                 .get()
@@ -122,7 +128,8 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
 
     @Override
     public Flux<Review> getReviews(int productId) {
-        String url = reviewServiceUrl + "/review?productId=" + productId;
+        URI url = UriComponentsBuilder.fromUriString(reviewServiceUrl + "/review?productId={productId}")
+                        .build(productId);
         log.debug("Will call getReviews API on URL: {}", url);
 
         return getWebClient()
@@ -152,31 +159,6 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         return webClient;
     }
 
-    public Mono<Health> getProductHealth(){
-        return getHealth(productServiceUrl);
-    }
-
-    public Mono<Health> getRecommendationHealth(){
-        return getHealth(recommendationServiceUrl);
-    }
-
-    public Mono<Health> getReviewHealth(){
-        return getHealth(reviewServiceUrl);
-    }
-
-    private Mono<Health> getHealth(String url) {
-        url += "/actuator/health";
-        log.debug("Will call the Health API on URL: {}", url);
-
-        return getWebClient().get()
-                .uri(url)
-                .retrieve()
-                .bodyToMono(Health.class)
-                .map(h -> new Health.Builder().up().build())
-                .onErrorResume(ex -> Mono.just(new Health.Builder().down(ex).build()))
-                .log();
-    }
-
     private Throwable handleException(Throwable ex){
         if(!(ex instanceof  WebClientResponseException)){
             log.warn("Got a unexpected error: {}, will rethrow it", ex.toString());
@@ -197,4 +179,11 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         }
     }
 
+    private String getErrorMessage(WebClientResponseException e) {
+        try {
+            return objectMapper.readValue(e.getResponseBodyAsString(), HttpErrorInfo.class).getMessage();
+        }catch (IOException ioException){
+            return ioException.getMessage();
+        }
+    }
 }

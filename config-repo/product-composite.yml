@@ -56,6 +56,59 @@ spring:
         jwt:
           jwk-set-uri: http://${app.auth-server}:9999/.well-known/jwks.json
 
+app.product-service.timeoutSec: 2
+
+#resilience4j.retry:
+#  backends:
+#    product:
+#      # 첫 번째 호출을 포함한 총 재시도 횟수
+#      maxRetryAttempts: 3
+#      # 재시도를 다시 수행하기 전의 대기 시간
+#      waitDuration: 1000
+#      # 재시도를 트리거하는 예외 항목
+#      retryExceptions:
+#        - org.springframework.web.reactive.function.client.WebClientResponseException$InternalServerError
+
+management.health.circuitbreakers.enabled: true
+
+resilience4j:
+  retry:
+    instances:
+      product:
+        # 첫 번째 호출을 포함한 총 재시도 횟수
+        maxRetryAttempts: 3
+        # 재시도를 다시 수행하기 전의 대기 시간
+        waitDuration: 1000
+        # 재시도를 트리거하는 예외 항목
+        retryExceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException$InternalServerError
+
+  circuitbreaker:
+    configs:
+      default:
+        # 서킷 브레이커 정보를 상태 점검(health) 엔드포인트에 추가할지 결정
+        registerHealthIndicator: true
+        # 서킷이 CLOSED 일때 요청의 결과를 기록하기 위한 슬라이딩 윈도의 크기
+        slidingWindowSize: 5
+        # 실패한 호출에 대한 임계값(백분율)으로 이 값을 초과하면 서킷이 열림
+        failureRateThreshold: 50
+        # 서킷 브레이커가 Open에서 half-open으로 전환하기 전 시간
+        waitDurationInOpenState: 10s
+        # 반열림 상태에서의 호출 수로, 서킷을 다시 열거나 닫힘 상태로 돌아갈지를 결정할 때 사용
+        permittedNumberOfCallsInHalfOpenState: 3
+        # event가 발생되면, 해당 버퍼에 저장되는데 그 크기를 지정.
+        eventConsumerBufferSize: 10
+
+    instances:
+      product:
+        baseConfig: default
+        # 대기 시간이 지난 후에 서킷을 반열림 상태로 자동 전환할지, 첫 번째 호출이 들어오길 기다렸다가 반열림 상태로 전환할지 결정
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        # 오류로 간주하지 않을 예외를 지정.
+        ignoreExceptions:
+          - se.magnus.util.exceptions.InvalidInputException
+          - se.magnus.util.exceptions.NotFoundException
+
 logging:
   level:
     root: INFO

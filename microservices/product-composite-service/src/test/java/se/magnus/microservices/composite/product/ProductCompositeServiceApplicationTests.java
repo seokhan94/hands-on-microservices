@@ -2,6 +2,7 @@ package se.magnus.microservices.composite.product;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,6 +21,8 @@ import se.magnus.util.exceptions.NotFoundException;
 
 import java.util.Collections;
 
+import static org.mockito.ArgumentMatchers.*;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         classes = {ProductCompositeServiceApplication.class, TestSecurityConfig.class},
         properties = {"spring.main.allow-bean-definition-overriding=true","eureka.client.enabled=false","spring.cloud.config.enabled=false"})
@@ -36,7 +39,7 @@ public class ProductCompositeServiceApplicationTests {
 
     @BeforeEach
     public void setUp(){
-        Mockito.when(productCompositeIntegration.getProduct(PRODUCT_ID_OK))
+        Mockito.when(productCompositeIntegration.getProduct(eq(PRODUCT_ID_OK), anyInt(), anyInt()))
                 .thenReturn(Mono.just(new Product(PRODUCT_ID_OK, "name", 1, "mock-address")));
 
         Mockito.when(productCompositeIntegration.getRecommendations(PRODUCT_ID_OK))
@@ -45,10 +48,10 @@ public class ProductCompositeServiceApplicationTests {
         Mockito.when(productCompositeIntegration.getReviews(PRODUCT_ID_OK))
                 .thenReturn(Flux.fromIterable(Collections.singletonList(new Review(PRODUCT_ID_OK, 1, "author", "subject", "content", "mock address"))));
 
-        Mockito.when(productCompositeIntegration.getProduct(PRODUCT_ID_NOT_FOUND))
+        Mockito.when(productCompositeIntegration.getProduct(eq(PRODUCT_ID_NOT_FOUND), anyInt(), anyInt()))
                 .thenThrow(new NotFoundException("NOT FOUND: " + PRODUCT_ID_NOT_FOUND));
 
-        Mockito.when(productCompositeIntegration.getProduct(PRODUCT_ID_INVALID))
+        Mockito.when(productCompositeIntegration.getProduct(eq(PRODUCT_ID_INVALID), anyInt(), anyInt()))
                 .thenThrow(new InvalidInputException("INVALID: " + PRODUCT_ID_INVALID));
     }
 
