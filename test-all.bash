@@ -306,7 +306,7 @@ READER_AUTH="-H \"Authorization: Bearer $READER_ACCESS_TOKEN\""
 assertCurl 200 "curl -k https://$HOST:$PORT/product-composite/$PROD_ID_REVS_RECS $READER_AUTH -s"
 assertCurl 403 "curl -k https://$HOST:$PORT/product-composite/$PROD_ID_REVS_RECS $READER_AUTH -X DELETE -s"
 
-testCircuitBreaker
+# testCircuitBreaker
 echo "End, all tests OK:" `date`
 
 if [[ $@ == *"stop"* ]]

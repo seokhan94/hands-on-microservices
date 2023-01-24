@@ -19,6 +19,19 @@ spring.cloud.stream.kafka.binder:
   brokers: localhost
   defaultBrokerPort: 9092
 
+# spring.zipkin.sender.type: rabbit
+# spring.sleuth.sampler.probability: 1.0
+
+spring:
+  zipkin:
+    sender:
+      type: rabbit
+    base-url: http://localhost:9411
+    enabled: true
+  sleuth:
+    sampler:
+      probability: 1.0
+
 management.endpoint.health.show-details: "ALWAYS"
 management.endpoints.web.exposure.include: "*"
 
@@ -38,3 +51,20 @@ spring:
 app:
   eureka-server: eureka
   auth-server: auth-server
+
+
+---
+spring:
+  config:
+    activate:
+      on-profile: kafka
+  cloud:
+    stream:
+      defaultBinder: kafka
+  zipkin:
+    sender:
+      type: kafka
+  kafka:
+    bootstrap-servers: kafka:9092
+
+management.health.rabbit.enabled: false

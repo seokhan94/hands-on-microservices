@@ -113,6 +113,9 @@ services:
     mem_limit: 350m
     networks:
       - my-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
   gateway:
     build: spring-cloud/gateway
@@ -125,6 +128,9 @@ services:
       - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
     ports:
       - "8443:8443"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
   auth-server:
     environment:
@@ -135,6 +141,9 @@ services:
     mem_limit: 350m
     networks:
       - my-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
   config-server:
     environment:
@@ -148,6 +157,20 @@ services:
     mem_limit: 350m
     networks:
       - my-network
+
+  zipkin:
+    image: openzipkin/zipkin:latest-arm64
+    networks:
+      - my-network
+    environment:
+      - RABBIT_ADDRESS=rabbitmq
+      - STORAGE_TYPE=mem
+    mem_limit: 512m
+    ports:
+      - "9411:9411"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
   mongodb:
     image: mongo

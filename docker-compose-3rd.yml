@@ -1,6 +1,20 @@
 version: '2.1'
 
 services:
+  zipkin:
+    image: openzipkin/zipkin
+    networks:
+      - my-network
+    environment:
+      - RABBIT_ADDRESS=rabbitmq
+      - STORAGE_TYPE=mem
+    mem_limit: 512m
+    ports:
+      - "9411:9411"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
   mongodb:
     image: mongo
     mem_limit: 350m

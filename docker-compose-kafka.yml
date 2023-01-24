@@ -106,35 +106,44 @@ services:
 
   eureka:
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,kafka
       - CONFIG_SERVER_USER=${CONFIG_SERVER_USER}
       - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
     build: spring-cloud/eureka-server
     mem_limit: 350m
     networks:
       - my-network
+    depends_on:
+      kafka:
+        condition: service_started
 
   gateway:
     build: spring-cloud/gateway
     mem_limit: 350m
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,kafka
       - CONFIG_SERVER_USER=${CONFIG_SERVER_USER}
       - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
     ports:
       - "8443:8443"
     networks:
       - my-network
+    depends_on:
+      kafka:
+        condition: service_started
 
   auth-server:
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=docker,kafka
       - CONFIG_SERVER_USER=${CONFIG_SERVER_USER}
       - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
     build: spring-cloud/authorization-server
     mem_limit: 350m
     networks:
       - my-network
+    depends_on:
+      kafka:
+        condition: service_started
 
   config-server:
     environment:
@@ -148,6 +157,20 @@ services:
     mem_limit: 350m
     networks:
       - my-network
+
+  zipkin:
+    image: openzipkin/zipkin
+    networks:
+      - my-network
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - STORAGE_TYPE=mem
+    mem_limit: 512m
+    ports:
+      - "9411:9411"
+    depends_on:
+      kafka:
+        condition: service_started
 
   mongodb:
     image: mongo

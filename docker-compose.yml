@@ -68,6 +68,9 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USER=${CONFIG_SERVER_USER}
       - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
   gateway:
     build: spring-cloud/gateway
@@ -80,6 +83,9 @@ services:
       - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
     ports:
       - "8443:8443"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
   auth-server:
     environment:
@@ -90,6 +96,9 @@ services:
     mem_limit: 350m
     networks:
       - my-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
   config-server:
     environment:
@@ -103,6 +112,20 @@ services:
     mem_limit: 350m
     networks:
       - my-network
+
+  zipkin:
+    image: openzipkin/zipkin
+    networks:
+      - my-network
+    environment:
+      - RABBIT_ADDRESSES=rabbitmq
+      - STORAGE_TYPE=mem
+    mem_limit: 350m
+    ports:
+      - "9411:9411"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
   mongodb:
     image: mongo
