@@ -115,7 +115,7 @@ curl --request POST \
 --header "content-type:application/json" \
 --data "{\"grant_type\":\"password\", \"username\":\"${USER_EMAIL}\", \"password\":\"${USER_PASSWORD}\", \"audience\":\"https://localhost:8443/product-composite\", \"scope\": \"openid email product:read\", \"client_id\": \"${CLIENT_ID}\", \"client_secret\": \"${CLIENT_SECRET}\"}" -s | jq 
 
-curl --request POST --url https://dev-mx40pctqun8r1ktx.us.auth0.com/oauth/token --header 'content-type: application/json' --data '{"client_id":"PYeHvJS4OKx0BBDejY8sXHykgJxa16B7","client_secret":"yAE5mpbyQ4NcjIwgBNk_SsMYNpKLJ-N8-Bh0hHU32-ezS8lsuC2rSQm3hqVuQgMe","audience":"https://localhost:8443/product-composite","scope": "openid email product:write product:read","grant_type":"password", "username":"seokhan94@naver.com", "password":"1q2w3e4r!"}' -s | jq
+curl --request POST --url https://${TENANT_DOMAIN_NAME}/oauth/token --header 'content-type: application/json' --data '{"client_id":"${CLIENT_ID}","client_secret":"${CLIENT_SECRET}","audience":"https://localhost:8443/product-composite","scope": "openid email product:write product:read","grant_type":"password", "username":"${USER_EMAIL}", "password":"${USER_PASSWORD}"}' -s | jq
 
 {
   "access_token": "eyJhbGciOi...I9pzBjUoQv1Q6mpJQ",
